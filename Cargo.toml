@@ -1,0 +1,11 @@
+[package]
+name = "cloud-storage-emulator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7.5", features = ["macros"] }
+snafu = { version = "0.8.3", features = ["backtrace"] }
+tokio = { version = "1.38.0", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
