@@ -13,6 +13,7 @@ pub struct ListResponse<T: Serialize> {
 pub enum ListKind {
     #[serde(rename = "storage#buckets")]
     Buckets,
+    #[allow(dead_code)]
     #[serde(rename = "storage#objects")]
     Objects,
 }
@@ -23,6 +24,7 @@ pub enum Kind {
     #[default]
     #[serde(rename = "storage#bucket")]
     Bucket,
+    #[allow(dead_code)]
     #[serde(rename = "storage#object")]
     Object,
 }

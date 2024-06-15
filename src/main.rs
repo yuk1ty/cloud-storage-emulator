@@ -4,7 +4,6 @@ use server::{commands::CommandArgs, Server};
 
 mod api;
 mod libs;
-mod repository;
 mod server;
 
 #[tokio::main]
