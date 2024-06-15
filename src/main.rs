@@ -1,6 +1,6 @@
-use libs::telemetry::init_telemetry;
+use libs::{errors::AppResult, telemetry::init_telemetry};
 use routes::routes;
-use snafu::{ResultExt, Whatever};
+use snafu::ResultExt;
 use tokio::net::TcpListener;
 
 mod handler;
@@ -9,7 +9,7 @@ mod repository;
 mod routes;
 
 #[tokio::main]
-async fn main() -> Result<(), Whatever> {
+async fn main() -> AppResult<()> {
     init_telemetry()?;
 
     tracing::info!("Starting the server on 0.0.0.0:4443 as http mode...");

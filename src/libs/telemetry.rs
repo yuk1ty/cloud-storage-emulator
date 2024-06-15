@@ -1,7 +1,9 @@
-use snafu::{ResultExt, Whatever};
+use snafu::ResultExt;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-pub fn init_telemetry() -> Result<(), Whatever> {
+use super::errors::AppResult;
+
+pub fn init_telemetry() -> AppResult<()> {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug"));
     let subscriber = tracing_subscriber::fmt::layer();
     tracing_subscriber::registry()
