@@ -17,13 +17,18 @@ impl Server {
     }
 
     pub async fn bootstrap(&self) -> AppResult<()> {
-        tracing::debug!(cfg = ?self.cfg, "Bootstrapping the server with given configuration");
+        tracing::debug!(server.args = ?self.cfg, "Bootstrapping the server with given configuration");
 
         let host = self.cfg.host.clone().unwrap_or("0.0.0.0".into());
         let port = self.cfg.port.unwrap_or(8000);
         let scheme = self.cfg.scheme.clone().unwrap_or(Protocol::Http);
 
-        tracing::info!("Starting the server on {host}:{port} as {scheme} mode...");
+        tracing::info!(
+            server.cfg.host=%host,
+            server.cfg.port=%port,
+            server.cfg.mode=%scheme,
+            "Starting server..."
+        );
 
         let router = routes();
         let listener = TcpListener::bind(format!("{host}:{port}"))
