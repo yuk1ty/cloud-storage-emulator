@@ -1,9 +1,19 @@
-use axum::http::StatusCode;
+use axum::Json;
 use tracing::instrument;
 
-use crate::libs::errors::{AppResult, Errors};
+use crate::{
+    api::models::{bucket::BucketResponse, Kind, ListKind, ListResponse},
+    libs::errors::{AppResult, Errors},
+};
 
 #[instrument]
-pub async fn list_buckets() -> AppResult<StatusCode, Errors> {
-    Ok(StatusCode::NOT_IMPLEMENTED)
+pub async fn list_buckets() -> AppResult<Json<ListResponse<BucketResponse>>, Errors> {
+    Ok(Json(ListResponse {
+        kind: ListKind::Buckets,
+        items: vec![BucketResponse {
+            kind: Kind::Bucket,
+            ..Default::default()
+        }],
+        prefixes: vec![],
+    }))
 }
