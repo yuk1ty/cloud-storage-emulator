@@ -1,9 +1,9 @@
 use axum::{routing::get, Router};
 use storage::bucket::bucket_routes;
 
-use crate::handler::health::health_check;
+use super::handlers::health::health_check;
 
-mod storage;
+pub mod storage;
 
 pub fn routes() -> Router {
     let hc_router = Router::new().route("/hc", get(health_check));

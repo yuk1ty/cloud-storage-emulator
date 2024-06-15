@@ -1,12 +1,11 @@
+use api::routes::routes;
 use libs::{errors::AppResult, telemetry::init_telemetry};
-use routes::routes;
 use snafu::ResultExt;
 use tokio::net::TcpListener;
 
-mod handler;
+mod api;
 mod libs;
 mod repository;
-mod routes;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
