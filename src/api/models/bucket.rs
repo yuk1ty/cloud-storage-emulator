@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use serde::Serialize;
 
 use super::Kind;
@@ -10,8 +11,8 @@ pub struct BucketResponse {
     pub default_event_based_hold: bool,
     pub name: String,
     pub versioning: BucketVersioning,
-    pub time_created: String,
-    pub updated: String,
+    pub time_created: NaiveDateTime,
+    pub updated: NaiveDateTime,
     pub location: String,
     pub storage_class: String,
     pub project_number: String,
