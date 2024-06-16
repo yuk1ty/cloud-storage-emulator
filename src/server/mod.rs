@@ -19,9 +19,7 @@ impl Server {
     pub async fn bootstrap(&self) -> AppResult<()> {
         tracing::debug!(server.args = ?self.cfg, "Bootstrapping the server with given configuration");
 
-        let host = self.cfg.host.clone().unwrap_or("0.0.0.0".into());
-        let port = self.cfg.port.unwrap_or(8000);
-        let scheme = self.cfg.scheme.clone().unwrap_or(Protocol::Http);
+        let CommandArgs { host, port, scheme } = &self.cfg;
 
         tracing::info!(
             server.cfg.host=%host,

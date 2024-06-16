@@ -3,12 +3,12 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct CommandArgs {
-    #[arg(long)]
-    pub host: Option<String>,
-    #[arg(long)]
-    pub port: Option<u16>,
-    #[arg(long)]
-    pub scheme: Option<Protocol>,
+    #[arg(long, default_value_t = String::from("0.0.0.0"))]
+    pub host: String,
+    #[arg(long, default_value_t = 8000)]
+    pub port: u16,
+    #[arg(long, default_value_t = Protocol::Http)]
+    pub scheme: Protocol,
 }
 
 #[derive(Debug, Clone, clap::ValueEnum, strum::Display)]
