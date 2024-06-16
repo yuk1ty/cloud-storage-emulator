@@ -1,10 +1,11 @@
-use commands::{CommandArgs, Protocol};
+use commands::CommandArgs;
 use snafu::ResultExt;
 use tokio::net::TcpListener;
 
 use crate::{api::routes::routes, libs::errors::AppResult};
 
 pub mod commands;
+pub mod context;
 
 pub struct Server {
     cfg: CommandArgs,
