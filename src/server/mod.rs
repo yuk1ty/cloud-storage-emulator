@@ -2,7 +2,7 @@ use commands::CommandArgs;
 use snafu::ResultExt;
 use tokio::net::TcpListener;
 
-use crate::{api::routes::routes, libs::errors::AppResult};
+use crate::{api::routes::routes, libs::errors::AppResult, storage::Storage};
 
 pub mod commands;
 pub mod context;
@@ -29,7 +29,7 @@ impl Server {
             "Starting server..."
         );
 
-        let router = routes();
+        let router = routes().with_state(Storage::new());
         let listener = TcpListener::bind(format!("{host}:{port}"))
             .await
             .whatever_context("Unexpected error has been occurred in constructing TcpListener")?;

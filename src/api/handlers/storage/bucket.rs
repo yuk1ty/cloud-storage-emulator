@@ -1,19 +1,18 @@
-use axum::Json;
+use std::convert::Infallible;
+
+use axum::{extract::State, Json};
 use tracing::instrument;
 
 use crate::{
-    api::models::{bucket::BucketResponse, Kind, ListKind, ListResponse},
-    libs::errors::{AppResult, Errors},
+    api::models::{bucket::BucketResponse, ListResponse},
+    flows::bucket::list,
+    libs::errors::AppResult,
+    storage::Storage,
 };
 
-#[instrument]
-pub async fn list_buckets() -> AppResult<Json<ListResponse<BucketResponse>>, Errors> {
-    Ok(Json(ListResponse {
-        kind: ListKind::Buckets,
-        items: vec![BucketResponse {
-            kind: Kind::Bucket,
-            ..Default::default()
-        }],
-        prefixes: vec![],
-    }))
+#[instrument(skip(storage))]
+pub async fn list_buckets(
+    State(storage): State<Storage>,
+) -> AppResult<Json<ListResponse<BucketResponse>>, Infallible> {
+    list(storage).await.map(ListResponse::from).map(Json)
 }

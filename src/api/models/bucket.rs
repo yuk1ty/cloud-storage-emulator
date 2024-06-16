@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
+use crate::kernel::bucket::Bucket;
+
 use super::Kind;
 
 #[derive(Debug, Default, Serialize)]
@@ -19,6 +21,21 @@ pub struct BucketResponse {
     pub metageneration: String,
     pub etag: String,
     pub location_type: String,
+}
+
+impl From<Bucket> for BucketResponse {
+    fn from(value: Bucket) -> Self {
+        BucketResponse {
+            kind: Kind::Bucket,
+            name: value.name,
+            time_created: value.time_created,
+            updated: value.updated,
+            versioning: BucketVersioning {
+                enabled: value.versioning,
+            },
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Default, Serialize)]
