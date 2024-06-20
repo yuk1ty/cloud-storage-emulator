@@ -5,7 +5,6 @@ use tokio::net::TcpListener;
 use crate::{api::routes::routes, libs::errors::AppResult, storage::Storage};
 
 pub mod commands;
-pub mod context;
 
 pub struct Server {
     cfg: CommandArgs,

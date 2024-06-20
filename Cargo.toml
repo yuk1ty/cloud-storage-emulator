@@ -13,3 +13,6 @@ strum = { version = "0.26.2", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
+
+[dev-dependencies]
+rstest = "0.21.0"
