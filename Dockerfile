@@ -12,7 +12,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release
 
-FROM debian:bookworm-slim as runner
+FROM alpine:3.20.0 as runner
 WORKDIR /app
 
 COPY --from=builder ./app/target/release/cloud-storage-emulator ./target/release/cloud-storage-emulator
