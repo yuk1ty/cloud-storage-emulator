@@ -316,6 +316,7 @@ dependencies = [
  "garde",
  "rstest",
  "serde",
+ "serde_json",
  "snafu",
  "strum",
  "tokio",
