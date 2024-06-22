@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::kernel::bucket::Bucket;
 
@@ -38,7 +38,17 @@ impl From<Bucket> for BucketResponse {
     }
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct BucketVersioning {
     pub enabled: bool,
+}
+
+#[derive(Debug, Deserialize, garde::Validate)]
+pub struct CreateBucket {
+    #[garde(pattern("^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$"))]
+    pub name: String,
+    #[garde(skip)]
+    pub versioning: BucketVersioning,
+    #[garde(skip)]
+    pub default_event_base_hold: bool,
 }
