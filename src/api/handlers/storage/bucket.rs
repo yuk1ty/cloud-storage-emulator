@@ -9,7 +9,7 @@ use crate::{
         bucket::{BucketResponse, CreateBucket},
         ListResponse,
     },
-    flows::bucket::list,
+    flows::bucket::{create_new_bucket, list},
     libs::errors::{AppResult, Errors},
     storage::Storage,
 };
@@ -26,5 +26,8 @@ pub async fn create_bucket(
     State(storage): State<Storage>,
     WithValidation(req): WithValidation<Json<CreateBucket>>,
 ) -> AppResult<Json<BucketResponse>, Errors> {
-    Ok(Json(BucketResponse::default()))
+    create_new_bucket(storage, req.into_inner())
+        .await
+        .map(BucketResponse::from)
+        .map(Json)
 }

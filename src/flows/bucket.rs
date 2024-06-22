@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use crate::{
     api::models::bucket::CreateBucket,
     kernel::bucket::Bucket,
-    libs::errors::Errors,
+    libs::errors::{AppResult, Errors},
     repositories::bucket::{create_bucket, get_all_buckets},
     storage::{Storage, StorageBucketAttr},
 };
@@ -16,7 +16,7 @@ pub async fn list(storage: Storage) -> Result<Vec<Bucket>, Infallible> {
         .collect())
 }
 
-pub async fn create_new_bucket(storage: Storage, event: CreateBucket) -> Result<Bucket, Errors> {
+pub async fn create_new_bucket(storage: Storage, event: CreateBucket) -> AppResult<Bucket, Errors> {
     let CreateBucket {
         name, versioning, .. // TODO handling other fields
     } = event;

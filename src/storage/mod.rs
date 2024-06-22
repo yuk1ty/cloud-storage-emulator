@@ -5,6 +5,8 @@ use std::{
 
 use chrono::NaiveDateTime;
 
+use crate::libs::errors::{AppResult, Errors};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct StorageBucketAttr {
     pub name: String,
@@ -43,6 +45,34 @@ impl Storage {
             .collect::<Vec<Arc<OnMemoryStorageBucket>>>();
         buckets.iter().map(|b| b.attr.clone()).collect()
     }
+
+    pub async fn create_bucket(
+        &self,
+        attr: StorageBucketAttr,
+    ) -> AppResult<StorageBucketAttr, Errors> {
+        let bucket_name = attr.name.clone();
+        let mut storage = self.0.write().unwrap();
+        if storage.contains_key(&bucket_name) {
+            return Err(Errors::AlreadyExists {
+                message: "Bucket already exists".into(),
+            });
+        }
+        storage.insert(
+            bucket_name.clone(),
+            Arc::new(OnMemoryStorageBucket {
+                attr,
+                objects: BTreeMap::new(),
+            }),
+        );
+        storage
+            .get(&bucket_name)
+            .map(|b| b.attr.clone())
+            // Shouldn't happen but just in case
+            .ok_or(Errors::FailedToWriteStorage {
+                id: bucket_name,
+                message: "Failed to create a new bucket".into(),
+            })
+    }
 }
 
 #[cfg(test)]
@@ -52,13 +82,28 @@ mod tests {
         sync::{Arc, RwLock},
     };
 
+    use claim::{assert_err, assert_matches, assert_ok_eq};
     use rstest::rstest;
 
-    use crate::storage::{OnMemoryStorageBucket, Storage, StorageBucketAttr};
+    use crate::{
+        libs::errors::Errors,
+        storage::{OnMemoryStorageBucket, Storage, StorageBucketAttr},
+    };
+
+    trait TestStorageExt {
+        fn empty() -> Self;
+    }
+
+    impl TestStorageExt for Storage {
+        fn empty() -> Self {
+            Storage(Arc::new(RwLock::new(BTreeMap::new())))
+        }
+    }
 
     #[rstest]
     #[tokio::test]
     async fn return_all_passed_buckets() {
+        // Arrange
         let attr1 = StorageBucketAttr {
             name: "test_bucket_1".to_string(),
             versioning: false,
@@ -88,7 +133,51 @@ mod tests {
             .into_iter()
             .collect(),
         )));
-        // assert_eq_unordered!(storage.read_all().await, vec![attr1, attr2]);
-        assert_eq!(storage.read_all().await, vec![attr1, attr2]);
+
+        // Act
+        let res = storage.read_all().await;
+
+        // Assert
+        assert_eq!(res, vec![attr1, attr2]);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn return_create_bucket_after_creating_new_bucket() {
+        // Arrange
+        let attr = StorageBucketAttr {
+            name: "test_new_bucket".to_string(),
+            versioning: true,
+            time_created: chrono::Utc::now().naive_utc(),
+            updated: chrono::Utc::now().naive_utc(),
+        };
+        let storage = Storage::empty();
+
+        // Act
+        let res = storage.create_bucket(attr.clone()).await;
+
+        // Assert
+        assert_ok_eq!(res, attr);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn return_conflict_error_when_bucket_already_exists() {
+        // Arrange
+        let attr = StorageBucketAttr {
+            name: "test_new_bucket".to_string(),
+            versioning: true,
+            time_created: chrono::Utc::now().naive_utc(),
+            updated: chrono::Utc::now().naive_utc(),
+        };
+        let storage = Storage::empty();
+        let _ = storage.create_bucket(attr.clone()).await;
+
+        // Act
+        let res = storage.create_bucket(attr.clone()).await;
+
+        // Assert
+        let err = assert_err!(res);
+        assert_matches!(err, Errors::AlreadyExists { .. });
     }
 }

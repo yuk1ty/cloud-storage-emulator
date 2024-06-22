@@ -1,6 +1,5 @@
 use crate::{
-    kernel::bucket::Bucket,
-    libs::errors::Errors,
+    libs::errors::{AppResult, Errors},
     storage::{Storage, StorageBucketAttr},
 };
 
@@ -11,6 +10,6 @@ pub async fn get_all_buckets(storage: Storage) -> Vec<StorageBucketAttr> {
 pub async fn create_bucket(
     storage: Storage,
     attr: StorageBucketAttr,
-) -> Result<StorageBucketAttr, Errors> {
-    todo!()
+) -> AppResult<StorageBucketAttr, Errors> {
+    storage.create_bucket(attr).await
 }
