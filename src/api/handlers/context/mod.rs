@@ -24,6 +24,6 @@ impl IntoResponse for Errors {
 // This is needed to work with `axum_garde`.
 impl FromRef<Storage> for () {
     fn from_ref(_: &Storage) -> Self {
-        ()
+        
     }
 }

@@ -32,6 +32,12 @@ type InnerStorage = BTreeMap<String, Arc<OnMemoryStorageBucket>>;
 #[derive(Clone)]
 pub struct Storage(Arc<RwLock<InnerStorage>>);
 
+impl Default for Storage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Storage {
     pub fn new() -> Self {
         Storage(Arc::new(RwLock::new(BTreeMap::new())))
