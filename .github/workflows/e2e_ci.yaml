@@ -1,0 +1,28 @@
+name: E2E code check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - e2e/*/**.go
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.x"
+
+      - name: Install dependencies
+        working-directory: e2e
+        run: go get .
+
+      - name: fmt
+        working-directory: e2e
+        run: go fmt .

@@ -12,7 +12,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release
 
-FROM alpine:3.20.0 as runner
+FROM debian:bookworm-slim as runner
 WORKDIR /app
 
 COPY --from=builder ./app/target/release/cloud-storage-emulator ./target/release/cloud-storage-emulator
@@ -20,4 +20,5 @@ COPY --from=builder ./app/target/release/cloud-storage-emulator ./target/release
 ENV PORT 8000
 EXPOSE $PORT
 
-ENTRYPOINT ["./app/target/release/cloud-storage-emulator"]
+# alpineにすると多分ディレクトリへの権限がない。なので、ユーザーを足してあげる必要がありそう。
+ENTRYPOINT ["./target/release/cloud-storage-emulator"]
