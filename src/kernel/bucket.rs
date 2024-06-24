@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Local};
 
 use crate::storage::StorageBucketAttr;
 
@@ -6,8 +6,9 @@ use crate::storage::StorageBucketAttr;
 pub struct Bucket {
     pub name: String,
     pub versioning: bool,
-    pub time_created: NaiveDateTime,
-    pub updated: NaiveDateTime,
+    pub default_event_based_hold: bool,
+    pub time_created: DateTime<Local>,
+    pub updated: DateTime<Local>,
 }
 
 impl From<StorageBucketAttr> for Bucket {
@@ -15,12 +16,14 @@ impl From<StorageBucketAttr> for Bucket {
         let StorageBucketAttr {
             name,
             versioning,
+            default_event_based_hold,
             time_created,
             updated,
         } = value;
         Self {
             name,
             versioning,
+            default_event_based_hold,
             time_created,
             updated,
         }

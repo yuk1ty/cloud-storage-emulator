@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Local};
 
 use crate::libs::errors::{AppResult, Errors};
 
@@ -11,8 +11,9 @@ use crate::libs::errors::{AppResult, Errors};
 pub struct StorageBucketAttr {
     pub name: String,
     pub versioning: bool,
-    pub time_created: NaiveDateTime,
-    pub updated: NaiveDateTime,
+    pub default_event_based_hold: bool,
+    pub time_created: DateTime<Local>,
+    pub updated: DateTime<Local>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -113,8 +114,9 @@ mod tests {
         let attr1 = StorageBucketAttr {
             name: "test_bucket_1".to_string(),
             versioning: false,
-            time_created: chrono::Utc::now().naive_utc(),
-            updated: chrono::Utc::now().naive_utc(),
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
         };
         let bucket1 = OnMemoryStorageBucket {
             attr: attr1.clone(),
@@ -123,8 +125,9 @@ mod tests {
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
             versioning: false,
-            time_created: chrono::Utc::now().naive_utc(),
-            updated: chrono::Utc::now().naive_utc(),
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
         };
         let bucket2 = OnMemoryStorageBucket {
             attr: attr2.clone(),
@@ -154,8 +157,9 @@ mod tests {
         let attr = StorageBucketAttr {
             name: "test_new_bucket".to_string(),
             versioning: true,
-            time_created: chrono::Utc::now().naive_utc(),
-            updated: chrono::Utc::now().naive_utc(),
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
 
@@ -173,8 +177,9 @@ mod tests {
         let attr = StorageBucketAttr {
             name: "test_new_bucket".to_string(),
             versioning: true,
-            time_created: chrono::Utc::now().naive_utc(),
-            updated: chrono::Utc::now().naive_utc(),
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
         let _ = storage.create_bucket(attr.clone()).await;

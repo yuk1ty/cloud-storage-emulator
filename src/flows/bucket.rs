@@ -18,13 +18,16 @@ pub async fn list(storage: Storage) -> Result<Vec<Bucket>, Infallible> {
 
 pub async fn create_new_bucket(storage: Storage, event: CreateBucket) -> AppResult<Bucket, Errors> {
     let CreateBucket {
-        name, versioning, .. // TODO handling other fields
+        name,
+        versioning,
+        default_event_base_hold,
     } = event;
     let attr = StorageBucketAttr {
         name,
-        versioning: versioning.enabled,
-        time_created: chrono::Utc::now().naive_utc(),
-        updated: chrono::Utc::now().naive_utc(),
+        versioning: versioning.map_or(false, |v| v.enabled),
+        default_event_based_hold: default_event_base_hold,
+        time_created: chrono::Local::now(),
+        updated: chrono::Local::now(),
     };
     create_bucket(storage, attr).await.map(Bucket::from)
 }

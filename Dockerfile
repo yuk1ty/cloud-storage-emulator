@@ -20,4 +20,4 @@ COPY --from=builder ./app/target/release/cloud-storage-emulator ./target/release
 ENV PORT 8000
 EXPOSE $PORT
 
-ENTRYPOINT ["./target/release/cloud-storage-emulator"]
+ENTRYPOINT ["./app/target/release/cloud-storage-emulator"]
