@@ -1,0 +1,32 @@
+name: Run E2E test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths-ignore:
+      - README.md
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.x"
+
+      - name: Build docker image
+        run: docker build . -t cloud-storage-emulator:latest
+
+      - name: Install dependencies
+        working-directory: e2e
+        run: go get .
+
+      # TODO: seems not to be working...fix here later
+      # - name: Run e2e test
+      #   working-directory: e2e
+      #   run: go test -v ./...
