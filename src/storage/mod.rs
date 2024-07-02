@@ -89,8 +89,7 @@ mod tests {
         sync::{Arc, RwLock},
     };
 
-    use claim::{assert_err, assert_matches, assert_ok_eq};
-    use rstest::rstest;
+    use googletest::prelude::*;
 
     use crate::{
         libs::errors::Errors,
@@ -107,7 +106,7 @@ mod tests {
         }
     }
 
-    #[rstest]
+    #[googletest::test]
     #[tokio::test]
     async fn return_all_passed_buckets() {
         // Arrange
@@ -150,7 +149,7 @@ mod tests {
         assert_eq!(res, vec![attr1, attr2]);
     }
 
-    #[rstest]
+    #[googletest::test]
     #[tokio::test]
     async fn return_create_bucket_after_creating_new_bucket() {
         // Arrange
@@ -167,10 +166,10 @@ mod tests {
         let res = storage.create_bucket(attr.clone()).await;
 
         // Assert
-        assert_ok_eq!(res, attr);
+        assert_that!(res, ok(eq(attr)))
     }
 
-    #[rstest]
+    #[googletest::test]
     #[tokio::test]
     async fn return_conflict_error_when_bucket_already_exists() {
         // Arrange
@@ -188,7 +187,6 @@ mod tests {
         let res = storage.create_bucket(attr.clone()).await;
 
         // Assert
-        let err = assert_err!(res);
-        assert_matches!(err, Errors::AlreadyExists { .. });
+        expect_that!(res, err(matches_pattern!(Errors::AlreadyExists { .. })));
     }
 }
