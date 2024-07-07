@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.5", features = ["macros"] }
-axum_garde = "0.19.2"
+axum_garde = "0.20"
 chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.5.7", features = ["derive"] }
-garde = { version = "0.19.2", features = ["derive", "pattern", "serde"] }
+garde = { version = "0.20", features = ["derive", "pattern", "serde"] }
 serde = { version = "1.0.203", features = ["derive"] }
 snafu = { version = "0.8.3", features = ["backtrace"] }
 strum = { version = "0.26.2", features = ["derive"] }
