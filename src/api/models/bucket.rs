@@ -59,5 +59,5 @@ pub struct CreateBucket {
     pub versioning: Option<BucketVersioning>,
     #[garde(skip)]
     #[serde(default)]
-    pub default_event_base_hold: bool,
+    pub default_event_based_hold: bool,
 }
