@@ -2,21 +2,18 @@ use std::convert::Infallible;
 
 use crate::{
     api::models::bucket::CreateBucket,
-    kernel::bucket::Bucket,
     libs::errors::{AppResult, Errors},
-    repositories::bucket::{create_bucket, get_all_buckets},
     storage::{Storage, StorageBucketAttr},
 };
 
-pub async fn list(storage: Storage) -> Result<Vec<Bucket>, Infallible> {
-    Ok(get_all_buckets(storage)
-        .await
-        .into_iter()
-        .map(Bucket::from)
-        .collect())
+pub async fn list(storage: Storage) -> Result<Vec<StorageBucketAttr>, Infallible> {
+    Ok(storage.read_all().await.into_iter().collect())
 }
 
-pub async fn create_new_bucket(storage: Storage, event: CreateBucket) -> AppResult<Bucket, Errors> {
+pub async fn create_new_bucket(
+    storage: Storage,
+    event: CreateBucket,
+) -> AppResult<StorageBucketAttr, Errors> {
     let CreateBucket {
         name,
         versioning,
@@ -29,5 +26,5 @@ pub async fn create_new_bucket(storage: Storage, event: CreateBucket) -> AppResu
         time_created: chrono::Local::now(),
         updated: chrono::Local::now(),
     };
-    create_bucket(storage, attr).await.map(Bucket::from)
+    storage.create_bucket(attr).await
 }

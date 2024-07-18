@@ -1,7 +1,7 @@
 use bucket::BucketResponse;
 use serde::Serialize;
 
-use crate::kernel::bucket::Bucket;
+use crate::storage::StorageBucketAttr;
 
 pub mod bucket;
 
@@ -12,8 +12,8 @@ pub struct ListResponse<T: Serialize> {
     pub prefixes: Vec<String>,
 }
 
-impl From<Vec<Bucket>> for ListResponse<BucketResponse> {
-    fn from(buckets: Vec<Bucket>) -> Self {
+impl From<Vec<StorageBucketAttr>> for ListResponse<BucketResponse> {
+    fn from(buckets: Vec<StorageBucketAttr>) -> Self {
         ListResponse {
             kind: ListKind::Buckets,
             items: buckets.into_iter().map(|bucket| bucket.into()).collect(),

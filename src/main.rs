@@ -4,9 +4,7 @@ use server::{commands::CommandArgs, Server};
 
 mod api;
 mod flows;
-mod kernel;
 mod libs;
-mod repositories;
 mod server;
 mod storage;
 

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
-use crate::kernel::bucket::Bucket;
+use crate::storage::StorageBucketAttr;
 
 use super::Kind;
 
@@ -23,8 +23,8 @@ pub struct BucketResponse {
     pub location_type: String,
 }
 
-impl From<Bucket> for BucketResponse {
-    fn from(value: Bucket) -> Self {
+impl From<StorageBucketAttr> for BucketResponse {
+    fn from(value: StorageBucketAttr) -> Self {
         BucketResponse {
             kind: Kind::Bucket,
             id: value.name.clone(),
