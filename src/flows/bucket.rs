@@ -21,17 +21,5 @@ pub async fn create_new_bucket(
     storage: Storage,
     event: CreateBucket,
 ) -> AppResult<StorageBucketAttr, Errors> {
-    let CreateBucket {
-        name,
-        versioning,
-        default_event_based_hold,
-    } = event;
-    let attr = StorageBucketAttr {
-        name,
-        versioning: versioning.map_or(false, |v| v.enabled),
-        default_event_based_hold,
-        time_created: chrono::Local::now(),
-        updated: chrono::Local::now(),
-    };
-    storage.create_bucket(attr).await
+    storage.create_bucket(event.into()).await
 }

@@ -61,3 +61,20 @@ pub struct CreateBucket {
     #[serde(default)]
     pub default_event_based_hold: bool,
 }
+
+impl From<CreateBucket> for StorageBucketAttr {
+    fn from(event: CreateBucket) -> Self {
+        let CreateBucket {
+            name,
+            versioning,
+            default_event_based_hold,
+        } = event;
+        StorageBucketAttr {
+            name,
+            versioning: versioning.map_or(false, |v| v.enabled),
+            default_event_based_hold,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        }
+    }
+}
