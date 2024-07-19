@@ -53,6 +53,11 @@ impl Storage {
         buckets.iter().map(|b| b.attr.clone()).collect()
     }
 
+    pub async fn read(&self, bucket_name: String) -> Option<StorageBucketAttr> {
+        let storage = self.0.read().unwrap();
+        storage.get(&bucket_name).map(|bucket| bucket.attr.clone())
+    }
+
     pub async fn create_bucket(
         &self,
         attr: StorageBucketAttr,
@@ -147,6 +152,92 @@ mod tests {
 
         // Assert
         assert_eq!(res, vec![attr1, attr2]);
+    }
+
+    #[googletest::test]
+    #[tokio::test]
+    async fn return_specific_bucket() {
+        // Arrange
+        let attr1 = StorageBucketAttr {
+            name: "test_bucket_1".to_string(),
+            versioning: false,
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        };
+        let bucket1 = OnMemoryStorageBucket {
+            attr: attr1.clone(),
+            objects: BTreeMap::new(),
+        };
+        let attr2 = StorageBucketAttr {
+            name: "test_bucket_2".to_string(),
+            versioning: false,
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        };
+        let bucket2 = OnMemoryStorageBucket {
+            attr: attr2.clone(),
+            objects: BTreeMap::new(),
+        };
+
+        let storage = Storage(Arc::new(RwLock::new(
+            vec![
+                ("test_bucket_1".to_string(), Arc::new(bucket1)),
+                ("test_bucket_2".to_string(), Arc::new(bucket2)),
+            ]
+            .into_iter()
+            .collect(),
+        )));
+
+        // Act
+        let res = storage.read("test_bucket_2".into()).await;
+
+        // Assert
+        assert_that!(res, some(eq(attr2)));
+    }
+
+    #[googletest::test]
+    #[tokio::test]
+    async fn return_no_bucket_if_passed_non_exist_bucket_name() {
+        // Arrange
+        let attr1 = StorageBucketAttr {
+            name: "test_bucket_1".to_string(),
+            versioning: false,
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        };
+        let bucket1 = OnMemoryStorageBucket {
+            attr: attr1.clone(),
+            objects: BTreeMap::new(),
+        };
+        let attr2 = StorageBucketAttr {
+            name: "test_bucket_2".to_string(),
+            versioning: false,
+            default_event_based_hold: false,
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        };
+        let bucket2 = OnMemoryStorageBucket {
+            attr: attr2.clone(),
+            objects: BTreeMap::new(),
+        };
+
+        let storage = Storage(Arc::new(RwLock::new(
+            vec![
+                ("test_bucket_1".to_string(), Arc::new(bucket1)),
+                ("test_bucket_2".to_string(), Arc::new(bucket2)),
+            ]
+            .into_iter()
+            .collect(),
+        )));
+
+        // Act
+        let res = storage.read("non-exist".into()).await;
+
+        // Assert
+        assert_that!(res, none());
     }
 
     #[googletest::test]

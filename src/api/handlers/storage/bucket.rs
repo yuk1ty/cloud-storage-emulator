@@ -1,6 +1,9 @@
 use std::convert::Infallible;
 
-use axum::{extract::State, Json};
+use axum::{
+    extract::{Path, State},
+    Json,
+};
 use axum_garde::WithValidation;
 use tracing::instrument;
 
@@ -9,7 +12,7 @@ use crate::{
         bucket::{BucketResponse, CreateBucket},
         ListResponse,
     },
-    flows::bucket::{create_new_bucket, list},
+    flows::bucket::{create_new_bucket, find_bucket, list},
     libs::errors::{AppResult, Errors},
     storage::Storage,
 };
@@ -19,6 +22,17 @@ pub async fn list_buckets(
     State(storage): State<Storage>,
 ) -> AppResult<Json<ListResponse<BucketResponse>>, Infallible> {
     list(storage).await.map(ListResponse::from).map(Json)
+}
+
+#[instrument(skip(storage))]
+pub async fn get_bucket(
+    Path(bucket): Path<String>,
+    State(storage): State<Storage>,
+) -> AppResult<Json<Option<BucketResponse>>, Infallible> {
+    find_bucket(storage, bucket)
+        .await
+        .map(|result| result.map(BucketResponse::from))
+        .map(Json)
 }
 
 #[instrument(skip(storage))]
