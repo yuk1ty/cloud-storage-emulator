@@ -1,5 +1,6 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
+use strum::EnumString;
 
 use crate::storage::StorageBucketAttr;
 
@@ -77,4 +78,20 @@ impl From<CreateBucket> for StorageBucketAttr {
             updated: chrono::Local::now(),
         }
     }
+}
+
+#[derive(Debug, Deserialize, EnumString)]
+pub enum Projection {
+    #[strum(serialize = "full")]
+    Full,
+    #[strum(serialize = "noAcl")]
+    NoAcl,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBucketParams {
+    if_metageneration_match: Option<u64>,
+    if_metageneration_not_match: Option<u64>,
+    projection: Option<Projection>,
 }

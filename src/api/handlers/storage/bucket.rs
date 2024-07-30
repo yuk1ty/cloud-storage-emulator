@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     Json,
 };
 use axum_garde::WithValidation;
@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::{
     api::models::{
-        bucket::{BucketResponse, CreateBucket},
+        bucket::{BucketResponse, CreateBucket, GetBucketParams},
         ListResponse,
     },
     flows::bucket::{create_new_bucket, find_bucket, list},
@@ -28,6 +28,7 @@ pub async fn list_buckets(
 pub async fn get_bucket(
     Path(bucket): Path<String>,
     State(storage): State<Storage>,
+    Query(params): Query<GetBucketParams>,
 ) -> AppResult<Json<Option<BucketResponse>>, Infallible> {
     find_bucket(storage, bucket)
         .await
