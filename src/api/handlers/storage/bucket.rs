@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::{
     api::models::{
-        bucket::{BucketResponse, CreateBucket, GetBucketParams},
+        bucket::{BucketResponse, GetBucketParams, InsertBucket, InsertBucketParams},
         ListResponse,
     },
     flows::bucket::{create_new_bucket, find_bucket, list},
@@ -37,9 +37,10 @@ pub async fn get_bucket(
 }
 
 #[instrument(skip(storage))]
-pub async fn create_bucket(
+pub async fn insert_bucket(
     State(storage): State<Storage>,
-    WithValidation(req): WithValidation<Json<CreateBucket>>,
+    Query(_params): Query<InsertBucketParams>,
+    WithValidation(req): WithValidation<Json<InsertBucket>>,
 ) -> AppResult<Json<BucketResponse>, Errors> {
     create_new_bucket(storage, req.into_inner())
         .await

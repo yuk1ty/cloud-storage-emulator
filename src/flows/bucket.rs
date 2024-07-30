@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 
 use crate::{
-    api::models::bucket::CreateBucket,
+    api::models::bucket::InsertBucket,
     libs::errors::{AppResult, Errors},
     storage::{Storage, StorageBucketAttr},
 };
@@ -19,7 +19,7 @@ pub async fn find_bucket(
 
 pub async fn create_new_bucket(
     storage: Storage,
-    event: CreateBucket,
+    event: InsertBucket,
 ) -> AppResult<StorageBucketAttr, Errors> {
     storage.create_bucket(event.into()).await
 }
