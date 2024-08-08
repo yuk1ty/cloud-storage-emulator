@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"cloud.google.com/go/storage"
@@ -17,11 +16,6 @@ func TestCreateBucket(t *testing.T) {
 	t.Run("Create one bucket without any error", func(t *testing.T) {
 		// Arrange
 		ctx := context.Background()
-		emu, err := helper.LaunchTestContainer(ctx)
-		if err != nil {
-			log.Fatalf("Could not start emulator: %s", err)
-		}
-		defer helper.TerminateTestContainer(emu, ctx)
 
 		assert := assert.New(t)
 
@@ -49,11 +43,6 @@ func TestCreateBucket(t *testing.T) {
 	t.Run("Create one bucket and create again then get 409 conflict", func(t *testing.T) {
 		// Arrange
 		ctx := context.Background()
-		emu, err := helper.LaunchTestContainer(ctx)
-		if err != nil {
-			log.Fatalf("Could not start emulator: %s", err)
-		}
-		defer helper.TerminateTestContainer(emu, ctx)
 
 		assert := assert.New(t)
 
