@@ -80,11 +80,10 @@ impl From<InsertBucket> for StorageBucketAttr {
     }
 }
 
-#[derive(Debug, Deserialize, EnumString)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Projection {
-    #[strum(serialize = "full")]
     Full,
-    #[strum(serialize = "noAcl")]
     NoAcl,
 }
 
