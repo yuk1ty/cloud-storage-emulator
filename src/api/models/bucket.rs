@@ -2,7 +2,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
-use crate::storage::StorageBucketAttr;
+use crate::storage::{StorageBucketAttr, UpdateBucketAttr};
 
 use super::Kind;
 
@@ -84,6 +84,28 @@ impl From<InsertBucket> for StorageBucketAttr {
     }
 }
 
+#[derive(Debug, Deserialize, garde::Validate)]
+pub struct UpdateBucket {
+    #[garde(skip)]
+    pub versioning: Option<BucketVersioning>,
+    #[garde(skip)]
+    #[serde(default)]
+    pub default_event_based_hold: bool,
+}
+
+impl From<UpdateBucket> for UpdateBucketAttr {
+    fn from(event: UpdateBucket) -> Self {
+        let UpdateBucket {
+            versioning,
+            default_event_based_hold,
+        } = event;
+        UpdateBucketAttr {
+            versioning: versioning.map(|v| v.enabled),
+            default_event_based_hold,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Projection {
@@ -95,6 +117,7 @@ pub enum Projection {
 /// https://cloud.google.com/storage/docs/json_api/v1/buckets/get#parameters
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(unused)]
 pub struct GetBucketParams {
     if_metageneration_match: Option<u64>,
     if_metageneration_not_match: Option<u64>,
@@ -135,9 +158,23 @@ pub enum PredefinedDefaultObjectAcl {
 /// https://cloud.google.com/storage/docs/json_api/v1/buckets/insert#parameters
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(unused)]
 pub struct InsertBucketParams {
     project: String,
     enable_object_retention: Option<bool>,
+    predefined_acl: Option<PredefinedAcl>,
+    predefined_default_object_acl: Option<PredefinedDefaultObjectAcl>,
+    projection: Option<Projection>,
+}
+
+/// Represents a request parameter for `update` bucket.
+/// https://cloud.google.com/storge/docs/json_api/v1/buckets/update#parameters
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(unused)]
+pub struct UpdateBucketParams {
+    if_metageneration_match: u64,
+    if_metageneration_not_match: u64,
     predefined_acl: Option<PredefinedAcl>,
     predefined_default_object_acl: Option<PredefinedDefaultObjectAcl>,
     projection: Option<Projection>,

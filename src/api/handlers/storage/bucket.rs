@@ -9,10 +9,13 @@ use tracing::instrument;
 
 use crate::{
     api::models::{
-        bucket::{BucketResponse, GetBucketParams, InsertBucket, InsertBucketParams},
+        bucket::{
+            BucketResponse, GetBucketParams, InsertBucket, InsertBucketParams, UpdateBucket,
+            UpdateBucketParams,
+        },
         ListResponse,
     },
-    flows::bucket::{create_new_bucket, find_bucket, list},
+    flows::bucket::{create_new_bucket, find_bucket, list, update_existing_bucket},
     libs::errors::{AppResult, Errors},
     storage::Storage,
 };
@@ -43,6 +46,19 @@ pub async fn insert_bucket(
     WithValidation(req): WithValidation<Json<InsertBucket>>,
 ) -> AppResult<Json<BucketResponse>, Errors> {
     create_new_bucket(storage, req.into_inner())
+        .await
+        .map(BucketResponse::from)
+        .map(Json)
+}
+
+#[instrument(skip(storage))]
+pub async fn update_bucket(
+    State(storage): State<Storage>,
+    Path(bucket_name): Path<String>,
+    Query(_params): Query<UpdateBucketParams>,
+    WithValidation(req): WithValidation<Json<UpdateBucket>>,
+) -> AppResult<Json<BucketResponse>, Errors> {
+    update_existing_bucket(storage, bucket_name, req.into_inner())
         .await
         .map(BucketResponse::from)
         .map(Json)
