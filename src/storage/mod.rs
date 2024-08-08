@@ -12,6 +12,7 @@ pub struct StorageBucketAttr {
     pub name: String,
     pub versioning: bool,
     pub default_event_based_hold: bool,
+    pub location: String,
     pub time_created: DateTime<Local>,
     pub updated: DateTime<Local>,
 }
@@ -43,7 +44,6 @@ impl Storage {
     pub fn new() -> Self {
         Storage(Arc::new(RwLock::new(BTreeMap::new())))
     }
-
     pub async fn read_all(&self) -> Vec<StorageBucketAttr> {
         let storage = self.0.read().unwrap();
         let buckets = storage
@@ -119,6 +119,7 @@ mod tests {
             name: "test_bucket_1".to_string(),
             versioning: false,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
@@ -130,6 +131,7 @@ mod tests {
             name: "test_bucket_2".to_string(),
             versioning: false,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
@@ -163,6 +165,7 @@ mod tests {
             versioning: false,
             default_event_based_hold: false,
             time_created: chrono::Local::now(),
+            location: "US-EAST1".into(),
             updated: chrono::Local::now(),
         };
         let bucket1 = OnMemoryStorageBucket {
@@ -173,6 +176,7 @@ mod tests {
             name: "test_bucket_2".to_string(),
             versioning: false,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
@@ -205,6 +209,7 @@ mod tests {
             name: "test_bucket_1".to_string(),
             versioning: false,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
@@ -216,6 +221,7 @@ mod tests {
             name: "test_bucket_2".to_string(),
             versioning: false,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
@@ -248,6 +254,7 @@ mod tests {
             name: "test_new_bucket".to_string(),
             versioning: true,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
@@ -268,6 +275,7 @@ mod tests {
             name: "test_new_bucket".to_string(),
             versioning: true,
             default_event_based_hold: false,
+            location: "US-EAST1".into(),
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };

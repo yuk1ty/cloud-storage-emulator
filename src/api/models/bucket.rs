@@ -36,8 +36,7 @@ impl From<StorageBucketAttr> for BucketResponse {
             versioning: BucketVersioning {
                 enabled: value.versioning,
             },
-            // TODO
-            location: "us".to_string(),
+            location: value.location,
             storage_class: "STANDARD".to_string(),
             project_number: "1".to_string(),
             metageneration: "1".to_string(),
@@ -61,6 +60,9 @@ pub struct InsertBucket {
     #[garde(skip)]
     #[serde(default)]
     pub default_event_based_hold: bool,
+    // TODO enum
+    #[garde(skip)]
+    pub location: String,
 }
 
 impl From<InsertBucket> for StorageBucketAttr {
@@ -69,10 +71,12 @@ impl From<InsertBucket> for StorageBucketAttr {
             name,
             versioning,
             default_event_based_hold,
+            location,
         } = event;
         StorageBucketAttr {
             name,
             versioning: versioning.map_or(false, |v| v.enabled),
+            location,
             default_event_based_hold,
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
