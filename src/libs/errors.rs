@@ -9,6 +9,9 @@ pub enum Errors {
         id: String,
         message: String,
     },
+    BucketNotFound {
+        message: String,
+    },
     #[snafu(whatever, display("{message}"))]
     Whatever {
         message: String,
