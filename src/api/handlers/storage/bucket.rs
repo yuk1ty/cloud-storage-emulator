@@ -10,12 +10,14 @@ use tracing::instrument;
 use crate::{
     api::models::{
         bucket::{
-            BucketResponse, GetBucketParams, InsertBucket, InsertBucketParams, UpdateBucket,
-            UpdateBucketParams,
+            BucketResponse, DeleteBucketParams, GetBucketParams, InsertBucket, InsertBucketParams,
+            UpdateBucket, UpdateBucketParams,
         },
         ListResponse,
     },
-    flows::bucket::{create_new_bucket, find_bucket, list, update_existing_bucket},
+    flows::bucket::{
+        create_new_bucket, delete_bucket as delete, find_bucket, list, update_existing_bucket,
+    },
     libs::errors::{AppResult, Errors},
     storage::Storage,
 };
@@ -59,6 +61,18 @@ pub async fn update_bucket(
     WithValidation(req): WithValidation<Json<UpdateBucket>>,
 ) -> AppResult<Json<BucketResponse>, Errors> {
     update_existing_bucket(storage, bucket, req.into_inner())
+        .await
+        .map(BucketResponse::from)
+        .map(Json)
+}
+
+#[instrument(skip(storage))]
+pub async fn delete_bucket(
+    State(storage): State<Storage>,
+    Path(bucket): Path<String>,
+    Query(_params): Query<DeleteBucketParams>,
+) -> AppResult<Json<BucketResponse>, Errors> {
+    delete(storage, bucket)
         .await
         .map(BucketResponse::from)
         .map(Json)

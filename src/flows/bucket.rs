@@ -24,12 +24,17 @@ pub async fn create_new_bucket(
     storage.create_bucket(event.into()).await
 }
 
-// Why do we need to use `#[warn(dead_code)]` here?
-#[allow(dead_code)]
 pub async fn update_existing_bucket(
     storage: Storage,
     bucket_name: String,
     event: UpdateBucket,
 ) -> AppResult<StorageBucketAttr, Errors> {
     storage.update_bucket_attr(bucket_name, event.into()).await
+}
+
+pub async fn delete_bucket(
+    storage: Storage,
+    bucket_name: String,
+) -> AppResult<StorageBucketAttr, Errors> {
+    storage.delete_bucket(bucket_name).await
 }
