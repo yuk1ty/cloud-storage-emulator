@@ -23,9 +23,9 @@ $ docker run -p 8000:8000 cloud-storage-emulator:latest
 ### Buckets Related
 
 - [x] List buckets
-- [ ] Get bucket
+- [x] Get bucket
 - [x] Create new bucket
-- [ ] Update bucket
+- [x] Update bucket
 - [ ] Delete bucket
 
 ### Objects Related
