@@ -54,11 +54,11 @@ pub async fn insert_bucket(
 #[instrument(skip(storage))]
 pub async fn update_bucket(
     State(storage): State<Storage>,
-    Path(bucket_name): Path<String>,
+    Path(bucket): Path<String>,
     Query(_params): Query<UpdateBucketParams>,
     WithValidation(req): WithValidation<Json<UpdateBucket>>,
 ) -> AppResult<Json<BucketResponse>, Errors> {
-    update_existing_bucket(storage, bucket_name, req.into_inner())
+    update_existing_bucket(storage, bucket, req.into_inner())
         .await
         .map(BucketResponse::from)
         .map(Json)

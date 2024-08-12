@@ -62,7 +62,7 @@ pub struct InsertBucket {
     pub default_event_based_hold: bool,
     // TODO enum
     #[garde(skip)]
-    pub location: String,
+    pub location: Option<String>,
 }
 
 impl From<InsertBucket> for StorageBucketAttr {
@@ -76,7 +76,7 @@ impl From<InsertBucket> for StorageBucketAttr {
         StorageBucketAttr {
             name,
             versioning: versioning.map_or(false, |v| v.enabled),
-            location,
+            location: location.unwrap_or_else(|| "US".to_string()),
             default_event_based_hold,
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
@@ -173,8 +173,8 @@ pub struct InsertBucketParams {
 #[serde(rename_all = "camelCase")]
 #[allow(unused)]
 pub struct UpdateBucketParams {
-    if_metageneration_match: u64,
-    if_metageneration_not_match: u64,
+    if_metageneration_match: Option<u64>,
+    if_metageneration_not_match: Option<u64>,
     predefined_acl: Option<PredefinedAcl>,
     predefined_default_object_acl: Option<PredefinedDefaultObjectAcl>,
     projection: Option<Projection>,
