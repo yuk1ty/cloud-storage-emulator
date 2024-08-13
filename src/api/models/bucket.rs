@@ -179,3 +179,13 @@ pub struct UpdateBucketParams {
     predefined_default_object_acl: Option<PredefinedDefaultObjectAcl>,
     projection: Option<Projection>,
 }
+
+/// Represents a request parameter for `delete` bucket.
+/// https://cloud.google.com/storage/docs/json_api/v1/buckets/delete#parameters
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(unused)]
+pub struct DeleteBucketParams {
+    if_metageneration_match: Option<u64>,
+    if_not_metageneration_match: Option<u64>,
+}

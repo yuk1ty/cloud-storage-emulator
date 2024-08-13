@@ -1,10 +1,12 @@
 use axum::{
-    routing::{get, patch, post, put},
+    routing::{delete, get, patch, post, put},
     Router,
 };
 
 use crate::{
-    api::handlers::storage::bucket::{get_bucket, insert_bucket, list_buckets, update_bucket},
+    api::handlers::storage::bucket::{
+        delete_bucket, get_bucket, insert_bucket, list_buckets, update_bucket,
+    },
     storage::Storage,
 };
 
@@ -16,4 +18,5 @@ pub fn bucket_routes() -> Router<Storage> {
         // Google doesn't recommend this method but for just in case.
         .route("/b/:bucket", put(update_bucket))
         .route("/b/:bucket", patch(update_bucket))
+        .route("/b/:bucket", delete(delete_bucket))
 }

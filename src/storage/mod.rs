@@ -132,6 +132,19 @@ impl Storage {
         existence_bucket.replace_attr(new_attr);
         Ok(existence_bucket.attr.clone())
     }
+
+    pub async fn delete_bucket(&self, bucket_name: String) -> AppResult<StorageBucketAttr, Errors> {
+        let mut storage = self.0.write().unwrap();
+        storage
+            .remove(&bucket_name)
+            .ok_or(Errors::BucketNotFound {
+                message: "Bucket not found".into(),
+            })
+            .map(|b| {
+                let lock = b.read().unwrap();
+                lock.attr.clone()
+            })
+    }
 }
 
 #[cfg(test)]
@@ -394,6 +407,52 @@ mod tests {
                 },
             )
             .await;
+
+        // Assert
+        assert_that!(res, err(matches_pattern!(Errors::BucketNotFound { .. })));
+    }
+
+    #[googletest::test]
+    #[tokio::test]
+    async fn can_delete_existing_bucket() {
+        // Arrange
+        let attr = StorageBucketAttr {
+            name: "test_new_bucket".to_string(),
+            versioning: true,
+            default_event_based_hold: false,
+            location: "US-EAST1".into(),
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        };
+        let storage = Storage::empty();
+        let _ = storage.create_bucket(attr.clone()).await;
+
+        // Act
+        let res = storage.delete_bucket("test_new_bucket".into()).await;
+        let get_again = storage.read("test_new_bucket").await;
+
+        // Assert
+        assert!(res.is_ok());
+        assert!(get_again.is_none());
+    }
+
+    #[googletest::test]
+    #[tokio::test]
+    async fn return_not_found_error_while_deleting_non_existing_bucket() {
+        // Arrange
+        let attr = StorageBucketAttr {
+            name: "test_new_bucket".to_string(),
+            versioning: true,
+            default_event_based_hold: false,
+            location: "US-EAST1".into(),
+            time_created: chrono::Local::now(),
+            updated: chrono::Local::now(),
+        };
+        let storage = Storage::empty();
+        let _ = storage.create_bucket(attr.clone()).await;
+
+        // Act
+        let res = storage.delete_bucket("non_exist_bucket".into()).await;
 
         // Assert
         assert_that!(res, err(matches_pattern!(Errors::BucketNotFound { .. })));
