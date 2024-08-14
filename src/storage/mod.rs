@@ -18,6 +18,13 @@ pub struct StorageBucketAttr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct CreateBucketAttr {
+    pub versioning: bool,
+    pub default_event_based_hold: bool,
+    pub location: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct UpdateBucketAttr {
     pub versioning: Option<bool>,
     pub default_event_based_hold: bool,
@@ -53,11 +60,24 @@ impl Default for Storage {
     }
 }
 
-impl Storage {
-    pub fn new() -> Self {
-        Storage(Arc::new(RwLock::new(BTreeMap::new())))
-    }
-    pub async fn read_all(&self) -> Vec<StorageBucketAttr> {
+pub trait BucketStorageExt {
+    async fn list(&self) -> Vec<StorageBucketAttr>;
+    async fn get(&self, name: &str) -> Option<StorageBucketAttr>;
+    async fn create(
+        &self,
+        name: &str,
+        attr: CreateBucketAttr,
+    ) -> AppResult<StorageBucketAttr, Errors>;
+    async fn update(
+        &self,
+        name: &str,
+        attr: UpdateBucketAttr,
+    ) -> AppResult<StorageBucketAttr, Errors>;
+    async fn delete(&self, name: &str) -> AppResult<StorageBucketAttr, Errors>;
+}
+
+impl BucketStorageExt for Storage {
+    async fn list(&self) -> Vec<StorageBucketAttr> {
         let storage = self.0.read().unwrap();
         let buckets = storage.values().cloned().collect::<Vec<InnerBucket>>();
         buckets
@@ -69,53 +89,60 @@ impl Storage {
             .collect()
     }
 
-    pub async fn read(&self, bucket_name: &str) -> Option<StorageBucketAttr> {
+    async fn get(&self, name: &str) -> Option<StorageBucketAttr> {
         let storage = self.0.read().unwrap();
-        storage.get(bucket_name).map(|b| {
+        storage.get(name).map(|b| {
             let lock = b.read().unwrap();
             lock.attr.clone()
         })
     }
 
-    pub async fn create_bucket(
+    async fn create(
         &self,
-        attr: StorageBucketAttr,
+        name: &str,
+        attr: CreateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors> {
-        let bucket_name = attr.name.clone();
         let mut storage = self.0.write().unwrap();
-        if storage.contains_key(&bucket_name) {
+        if storage.contains_key(name) {
             return Err(Errors::AlreadyExists {
                 message: "Bucket already exists".into(),
             });
         }
         storage.insert(
-            bucket_name.clone(),
+            name.to_string(),
             Arc::new(RwLock::new(OnMemoryStorageBucket {
-                attr,
+                attr: StorageBucketAttr {
+                    name: name.to_string(),
+                    versioning: attr.versioning,
+                    default_event_based_hold: attr.default_event_based_hold,
+                    location: attr.location,
+                    time_created: Local::now(),
+                    updated: Local::now(),
+                },
                 objects: BTreeMap::new(),
             })),
         );
         storage
-            .get(&bucket_name)
+            .get(name)
             .map(|b| {
                 let lock = b.read().unwrap();
                 lock.attr.clone()
             })
             // Shouldn't happen but just in case
             .ok_or(Errors::FailedToWriteStorage {
-                id: bucket_name,
+                id: name.to_string(),
                 message: "Failed to create a new bucket".into(),
             })
     }
 
-    pub async fn update_bucket_attr(
+    async fn update(
         &self,
-        bucket_name: String,
+        name: &str,
         attr: UpdateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors> {
         let mut storage = self.0.write().unwrap();
         let mut existence_bucket = storage
-            .get_mut(&bucket_name)
+            .get_mut(name)
             .ok_or(Errors::BucketNotFound {
                 message: "Bucket not found".into(),
             })?
@@ -133,10 +160,10 @@ impl Storage {
         Ok(existence_bucket.attr.clone())
     }
 
-    pub async fn delete_bucket(&self, bucket_name: String) -> AppResult<StorageBucketAttr, Errors> {
+    async fn delete(&self, name: &str) -> AppResult<StorageBucketAttr, Errors> {
         let mut storage = self.0.write().unwrap();
         storage
-            .remove(&bucket_name)
+            .remove(name)
             .ok_or(Errors::BucketNotFound {
                 message: "Bucket not found".into(),
             })
@@ -147,6 +174,12 @@ impl Storage {
     }
 }
 
+impl Storage {
+    pub fn new() -> Self {
+        Storage(Arc::new(RwLock::new(BTreeMap::new())))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -154,11 +187,13 @@ mod tests {
         sync::{Arc, RwLock},
     };
 
-    use googletest::prelude::*;
+    use googletest::{assert_pred, prelude::*};
 
     use crate::{
         libs::errors::Errors,
-        storage::{OnMemoryStorageBucket, Storage, StorageBucketAttr},
+        storage::{
+            BucketStorageExt, CreateBucketAttr, OnMemoryStorageBucket, Storage, StorageBucketAttr,
+        },
     };
 
     trait TestStorageExt {
@@ -210,10 +245,10 @@ mod tests {
         )));
 
         // Act
-        let res = storage.read_all().await;
+        let res = storage.list().await;
 
         // Assert
-        assert_eq!(res, vec![attr1, attr2]);
+        assert_that!(res, eq(vec![attr1, attr2]));
     }
 
     #[googletest::test]
@@ -255,7 +290,7 @@ mod tests {
         )));
 
         // Act
-        let res = storage.read("test_bucket_2").await;
+        let res = storage.get("test_bucket_2").await;
 
         // Assert
         assert_that!(res, some(eq(attr2)));
@@ -300,7 +335,7 @@ mod tests {
         )));
 
         // Act
-        let res = storage.read("non-exist").await;
+        let res = storage.get("non-exist").await;
 
         // Assert
         assert_that!(res, none());
@@ -310,40 +345,39 @@ mod tests {
     #[tokio::test]
     async fn return_create_bucket_after_creating_new_bucket() {
         // Arrange
-        let attr = StorageBucketAttr {
-            name: "test_new_bucket".to_string(),
+        let attr = CreateBucketAttr {
             versioning: true,
             default_event_based_hold: false,
             location: "US-EAST1".into(),
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
 
         // Act
-        let res = storage.create_bucket(attr.clone()).await;
+        let res = storage.create("test_new_bucket", attr).await;
 
         // Assert
-        assert_that!(res, ok(eq(attr)))
+        assert_pred!(res.is_ok());
+        let res = res.unwrap();
+        expect_that!(res.name, eq("test_new_bucket"));
+        expect_that!(res.versioning, eq(true));
+        expect_that!(res.default_event_based_hold, eq(false));
+        expect_that!(res.location, eq("US-EAST1"));
     }
 
     #[googletest::test]
     #[tokio::test]
     async fn return_conflict_error_when_bucket_already_exists() {
         // Arrange
-        let attr = StorageBucketAttr {
-            name: "test_new_bucket".to_string(),
+        let attr = CreateBucketAttr {
             versioning: true,
             default_event_based_hold: false,
             location: "US-EAST1".into(),
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
-        let _ = storage.create_bucket(attr.clone()).await;
+        let _ = storage.create("test_new_bucket", attr.clone()).await;
 
         // Act
-        let res = storage.create_bucket(attr.clone()).await;
+        let res = storage.create("test_new_bucket", attr).await;
 
         // Assert
         assert_that!(res, err(matches_pattern!(Errors::AlreadyExists { .. })));
@@ -353,21 +387,18 @@ mod tests {
     #[tokio::test]
     async fn return_updated_bucket_after_updating_existence_bucket() {
         // Arrange
-        let attr = StorageBucketAttr {
-            name: "test_new_bucket".to_string(),
+        let attr = CreateBucketAttr {
             versioning: true,
             default_event_based_hold: false,
             location: "US-EAST1".into(),
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
-        let _ = storage.create_bucket(attr.clone()).await;
+        let _ = storage.create("test_new_bucket", attr).await;
 
         // Act
         let res = storage
-            .update_bucket_attr(
-                "test_new_bucket".into(),
+            .update(
+                "test_new_bucket",
                 crate::storage::UpdateBucketAttr {
                     versioning: Some(false),
                     default_event_based_hold: true,
@@ -376,31 +407,28 @@ mod tests {
             .await;
 
         // Assert
-        assert!(res.is_ok());
+        assert_pred!(res.is_ok());
         let res = res.unwrap();
-        assert!(!res.versioning);
-        assert!(res.default_event_based_hold);
+        expect_that!(res.versioning, eq(false));
+        expect_that!(res.default_event_based_hold, eq(true));
     }
 
     #[googletest::test]
     #[tokio::test]
     async fn return_not_found_error_while_updating_bucket() {
         // Arrange
-        let attr = StorageBucketAttr {
-            name: "test_new_bucket".to_string(),
+        let attr = CreateBucketAttr {
             versioning: true,
             default_event_based_hold: false,
             location: "US-EAST1".into(),
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
-        let _ = storage.create_bucket(attr.clone()).await;
+        let _ = storage.create("test_new_bucket", attr).await;
 
         // Act
         let res = storage
-            .update_bucket_attr(
-                "non_exist_bucket".into(),
+            .update(
+                "non_exist_bucket",
                 crate::storage::UpdateBucketAttr {
                     versioning: Some(false),
                     default_event_based_hold: true,
@@ -416,43 +444,37 @@ mod tests {
     #[tokio::test]
     async fn can_delete_existing_bucket() {
         // Arrange
-        let attr = StorageBucketAttr {
-            name: "test_new_bucket".to_string(),
+        let attr = CreateBucketAttr {
             versioning: true,
             default_event_based_hold: false,
             location: "US-EAST1".into(),
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
-        let _ = storage.create_bucket(attr.clone()).await;
+        let _ = storage.create("test_new_bucket", attr).await;
 
         // Act
-        let res = storage.delete_bucket("test_new_bucket".into()).await;
-        let get_again = storage.read("test_new_bucket").await;
+        let res = storage.delete("test_new_bucket").await;
+        let get_again = storage.get("test_new_bucket").await;
 
         // Assert
-        assert!(res.is_ok());
-        assert!(get_again.is_none());
+        assert_pred!(res.is_ok());
+        assert_pred!(get_again.is_none());
     }
 
     #[googletest::test]
     #[tokio::test]
     async fn return_not_found_error_while_deleting_non_existing_bucket() {
         // Arrange
-        let attr = StorageBucketAttr {
-            name: "test_new_bucket".to_string(),
+        let attr = CreateBucketAttr {
             versioning: true,
             default_event_based_hold: false,
             location: "US-EAST1".into(),
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         };
         let storage = Storage::empty();
-        let _ = storage.create_bucket(attr.clone()).await;
+        let _ = storage.create("test_new_bucket", attr).await;
 
         // Act
-        let res = storage.delete_bucket("non_exist_bucket".into()).await;
+        let res = storage.delete("non_exist_bucket").await;
 
         // Assert
         assert_that!(res, err(matches_pattern!(Errors::BucketNotFound { .. })));

@@ -2,7 +2,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
-use crate::storage::{StorageBucketAttr, UpdateBucketAttr};
+use crate::storage::{CreateBucketAttr, StorageBucketAttr, UpdateBucketAttr};
 
 use super::Kind;
 
@@ -65,21 +65,18 @@ pub struct InsertBucket {
     pub location: Option<String>,
 }
 
-impl From<InsertBucket> for StorageBucketAttr {
+impl From<InsertBucket> for CreateBucketAttr {
     fn from(event: InsertBucket) -> Self {
         let InsertBucket {
-            name,
+            name: _,
             versioning,
             default_event_based_hold,
             location,
         } = event;
-        StorageBucketAttr {
-            name,
+        CreateBucketAttr {
             versioning: versioning.map_or(false, |v| v.enabled),
             location: location.unwrap_or_else(|| "US".to_string()),
             default_event_based_hold,
-            time_created: chrono::Local::now(),
-            updated: chrono::Local::now(),
         }
     }
 }
