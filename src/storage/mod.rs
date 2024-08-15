@@ -60,19 +60,31 @@ impl Default for Storage {
     }
 }
 
+/// Aggregates operations for a bucket.
 pub trait BucketStorageExt {
+    /// Corresponds to `list` operation: https://cloud.google.com/storage/docs/json_api/v1/buckets/list
     async fn list(&self) -> Vec<StorageBucketAttr>;
+
+    /// Corresponds to `get` operation: https://cloud.google.com/storage/docs/json_api/v1/buckets/get
     async fn get(&self, name: &str) -> Option<StorageBucketAttr>;
+
+    /// Corresponds to `insert` operation: https://cloud.google.com/storage/docs/json_api/v1/buckets/insert
     async fn create(
         &self,
         name: &str,
         attr: CreateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors>;
+
+    /// Corresponds to `patch` and `update` operation.
+    /// Patch: https://cloud.google.com/storage/docs/json_api/v1/buckets/patch
+    /// Update: https://cloud.google.com/storage/docs/json_api/v1/buckets/update
     async fn update(
         &self,
         name: &str,
         attr: UpdateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors>;
+
+    /// Corresponds to `delete` operation: https://cloud.google.com/storage/docs/json_api/v1/buckets/delete
     async fn delete(&self, name: &str) -> AppResult<StorageBucketAttr, Errors>;
 }
 
