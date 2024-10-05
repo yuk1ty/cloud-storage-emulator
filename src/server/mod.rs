@@ -1,5 +1,5 @@
 use commands::CommandArgs;
-use snafu::ResultExt;
+use eyre::Context;
 use tokio::net::TcpListener;
 
 use crate::{api::routes::routes, libs::errors::AppResult, storage::Storage};
@@ -31,9 +31,9 @@ impl Server {
         let router = routes().with_state(Storage::new());
         let listener = TcpListener::bind(format!("{host}:{port}"))
             .await
-            .whatever_context("Unexpected error has been occurred in constructing TcpListener")?;
+            .context("Unexpected error has been occurred in constructing TcpListener")?;
         axum::serve(listener, router)
             .await
-            .whatever_context("Failed to start the server!")
+            .context("Failed to start the server!")
     }
 }

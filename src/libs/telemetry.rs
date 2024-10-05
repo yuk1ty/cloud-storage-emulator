@@ -1,4 +1,4 @@
-use snafu::ResultExt;
+use eyre::Context;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use super::errors::AppResult;
@@ -10,6 +10,6 @@ pub fn init_telemetry() -> AppResult<()> {
         .with(subscriber)
         .with(env_filter)
         .try_init()
-        .whatever_context("Failed to initialize tracing_subscriber")?;
+        .context("Failed to initialize tracing_subscriber")?;
     Ok(())
 }

@@ -1,21 +1,14 @@
-use snafu::Snafu;
+use eyre::Result;
+use thiserror::Error;
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, Error)]
 pub enum Errors {
-    AlreadyExists {
-        message: String,
-    },
-    FailedToWriteStorage {
-        id: String,
-        message: String,
-    },
-    BucketNotFound {
-        message: String,
-    },
-    #[snafu(whatever, display("{message}"))]
-    Whatever {
-        message: String,
-    },
+    #[error("{message}")]
+    AlreadyExists { message: String },
+    #[error("Failed to write {id}: {message}")]
+    FailedToWriteStorage { id: String, message: String },
+    #[error("Bucket not found: {message}")]
+    BucketNotFound { message: String },
 }
 
-pub type AppResult<T, E = snafu::Whatever> = Result<T, E>;
+pub type AppResult<T, E = eyre::Report> = Result<T, E>;

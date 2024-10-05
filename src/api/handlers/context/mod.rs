@@ -25,10 +25,6 @@ impl IntoResponse for Errors {
                 tracing::error!(err.message = %message, id);
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
-            Errors::Whatever { message } => {
-                tracing::error!(err.message = %message, "Unexpected error happened");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
             Errors::BucketNotFound { message } => {
                 tracing::error!(err.message = %message);
                 StatusCode::NOT_FOUND.into_response()
