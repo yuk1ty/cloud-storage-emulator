@@ -1,9 +1,7 @@
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::Arc;
 
 use chrono::{DateTime, Local};
+use dashmap::DashMap;
 
 use crate::libs::errors::{AppResult, Errors};
 
@@ -30,10 +28,10 @@ pub struct UpdateBucketAttr {
     pub default_event_based_hold: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct OnMemoryStorageBucket {
     pub attr: StorageBucketAttr,
-    pub objects: BTreeMap<String, OnMemoryStorageObject>,
+    pub objects: DashMap<String, OnMemoryStorageObject>,
 }
 
 impl OnMemoryStorageBucket {
@@ -42,18 +40,14 @@ impl OnMemoryStorageBucket {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct OnMemoryStorageObject {
     // TODO: add attr
     pub data: Vec<u8>,
 }
 
-type InnerBucket = Arc<RwLock<OnMemoryStorageBucket>>;
-
-type InnerStorage = BTreeMap<String, Arc<RwLock<OnMemoryStorageBucket>>>;
-
 #[derive(Clone)]
-pub struct Storage(Arc<RwLock<InnerStorage>>);
+pub struct Storage(Arc<DashMap<String, OnMemoryStorageBucket>>);
 impl Default for Storage {
     fn default() -> Self {
         Self::new()
@@ -90,23 +84,16 @@ pub trait BucketStorageExt {
 
 impl BucketStorageExt for Storage {
     async fn list(&self) -> Vec<StorageBucketAttr> {
-        let storage = self.0.read().unwrap();
-        let buckets = storage.values().cloned().collect::<Vec<InnerBucket>>();
-        buckets
+        let buckets = self
+            .0
             .iter()
-            .map(|b| {
-                let lock = b.read().unwrap();
-                lock.attr.clone()
-            })
-            .collect()
+            .map(|b| b.value().clone())
+            .collect::<Vec<OnMemoryStorageBucket>>();
+        buckets.iter().map(|b| b.attr.clone()).collect()
     }
 
     async fn get(&self, name: &str) -> Option<StorageBucketAttr> {
-        let storage = self.0.read().unwrap();
-        storage.get(name).map(|b| {
-            let lock = b.read().unwrap();
-            lock.attr.clone()
-        })
+        self.0.get(name).map(|b| b.value().attr.clone())
     }
 
     async fn create(
@@ -114,15 +101,15 @@ impl BucketStorageExt for Storage {
         name: &str,
         attr: CreateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors> {
-        let mut storage = self.0.write().unwrap();
-        if storage.contains_key(name) {
+        if self.0.contains_key(name) {
             return Err(Errors::AlreadyExists {
                 message: "Bucket already exists".into(),
             });
         }
-        storage.insert(
+
+        self.0.insert(
             name.to_string(),
-            Arc::new(RwLock::new(OnMemoryStorageBucket {
+            OnMemoryStorageBucket {
                 attr: StorageBucketAttr {
                     name: name.to_string(),
                     versioning: attr.versioning,
@@ -131,16 +118,13 @@ impl BucketStorageExt for Storage {
                     time_created: Local::now(),
                     updated: Local::now(),
                 },
-                objects: BTreeMap::new(),
-            })),
+                objects: DashMap::new(),
+            },
         );
-        storage
+
+        self.0
             .get(name)
-            .map(|b| {
-                let lock = b.read().unwrap();
-                lock.attr.clone()
-            })
-            // Shouldn't happen but just in case
+            .map(|b| b.value().attr.clone())
             .ok_or(Errors::FailedToWriteStorage {
                 id: name.to_string(),
                 message: "Failed to create a new bucket".into(),
@@ -152,14 +136,10 @@ impl BucketStorageExt for Storage {
         name: &str,
         attr: UpdateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors> {
-        let mut storage = self.0.write().unwrap();
-        let mut existence_bucket = storage
-            .get_mut(name)
-            .ok_or(Errors::BucketNotFound {
-                message: "Bucket not found".into(),
-            })?
-            .write()
-            .unwrap();
+        let mut existence_bucket = self.0.get_mut(name).ok_or(Errors::BucketNotFound {
+            message: "Bucket not found".into(),
+        })?;
+
         let new_attr = StorageBucketAttr {
             name: existence_bucket.attr.name.clone(),
             versioning: attr.versioning.unwrap_or(existence_bucket.attr.versioning),
@@ -173,32 +153,26 @@ impl BucketStorageExt for Storage {
     }
 
     async fn delete(&self, name: &str) -> AppResult<StorageBucketAttr, Errors> {
-        let mut storage = self.0.write().unwrap();
-        storage
+        self.0
             .remove(name)
             .ok_or(Errors::BucketNotFound {
                 message: "Bucket not found".into(),
             })
-            .map(|b| {
-                let lock = b.read().unwrap();
-                lock.attr.clone()
-            })
+            .map(|b| b.1.attr.clone())
     }
 }
 
 impl Storage {
     pub fn new() -> Self {
-        Storage(Arc::new(RwLock::new(BTreeMap::new())))
+        Storage(Arc::new(DashMap::new()))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::BTreeMap,
-        sync::{Arc, RwLock},
-    };
+    use std::sync::Arc;
 
+    use dashmap::DashMap;
     use googletest::{assert_pred, prelude::*};
 
     use crate::{
@@ -214,7 +188,7 @@ mod tests {
 
     impl TestStorageExt for Storage {
         fn empty() -> Self {
-            Storage(Arc::new(RwLock::new(BTreeMap::new())))
+            Storage(Arc::new(DashMap::new()))
         }
     }
 
@@ -232,7 +206,7 @@ mod tests {
         };
         let bucket1 = OnMemoryStorageBucket {
             attr: attr1.clone(),
-            objects: BTreeMap::new(),
+            objects: DashMap::new(),
         };
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
@@ -244,20 +218,19 @@ mod tests {
         };
         let bucket2 = OnMemoryStorageBucket {
             attr: attr2.clone(),
-            objects: BTreeMap::new(),
+            objects: DashMap::new(),
         };
 
-        let storage = Storage(Arc::new(RwLock::new(
-            vec![
-                ("test_bucket_1".to_string(), Arc::new(RwLock::new(bucket1))),
-                ("test_bucket_2".to_string(), Arc::new(RwLock::new(bucket2))),
-            ]
-            .into_iter()
-            .collect(),
-        )));
+        let map = DashMap::new();
+        map.insert("test_bucket_1".to_string(), bucket1);
+        map.insert("test_bucket_2".to_string(), bucket2);
+
+        let storage = Storage(Arc::new(map));
 
         // Act
-        let res = storage.list().await;
+        let mut res = storage.list().await;
+        // To avoid flaky tests
+        res.sort_by(|a, b| a.name.cmp(&b.name));
 
         // Assert
         assert_that!(res, eq(&vec![attr1, attr2]));
@@ -277,7 +250,7 @@ mod tests {
         };
         let bucket1 = OnMemoryStorageBucket {
             attr: attr1.clone(),
-            objects: BTreeMap::new(),
+            objects: DashMap::new(),
         };
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
@@ -289,17 +262,14 @@ mod tests {
         };
         let bucket2 = OnMemoryStorageBucket {
             attr: attr2.clone(),
-            objects: BTreeMap::new(),
+            objects: DashMap::new(),
         };
 
-        let storage = Storage(Arc::new(RwLock::new(
-            vec![
-                ("test_bucket_1".to_string(), Arc::new(RwLock::new(bucket1))),
-                ("test_bucket_2".to_string(), Arc::new(RwLock::new(bucket2))),
-            ]
-            .into_iter()
-            .collect(),
-        )));
+        let map = DashMap::new();
+        map.insert("test_bucket_1".to_string(), bucket1);
+        map.insert("test_bucket_2".to_string(), bucket2);
+
+        let storage = Storage(Arc::new(map));
 
         // Act
         let res = storage.get("test_bucket_2").await;
@@ -322,7 +292,7 @@ mod tests {
         };
         let bucket1 = OnMemoryStorageBucket {
             attr: attr1.clone(),
-            objects: BTreeMap::new(),
+            objects: DashMap::new(),
         };
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
@@ -334,17 +304,14 @@ mod tests {
         };
         let bucket2 = OnMemoryStorageBucket {
             attr: attr2.clone(),
-            objects: BTreeMap::new(),
+            objects: DashMap::new(),
         };
 
-        let storage = Storage(Arc::new(RwLock::new(
-            vec![
-                ("test_bucket_1".to_string(), Arc::new(RwLock::new(bucket1))),
-                ("test_bucket_2".to_string(), Arc::new(RwLock::new(bucket2))),
-            ]
-            .into_iter()
-            .collect(),
-        )));
+        let map = DashMap::new();
+        map.insert("test_bucket_1".to_string(), bucket1);
+        map.insert("test_bucket_2".to_string(), bucket2);
+
+        let storage = Storage(Arc::new(map));
 
         // Act
         let res = storage.get("non-exist").await;

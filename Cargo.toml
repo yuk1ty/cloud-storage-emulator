@@ -8,6 +8,7 @@ axum = { version = "0.7.5", features = ["macros"] }
 axum_garde = "0.20"
 chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.5.7", features = ["derive"] }
+dashmap = "6.1.0"
 eyre = "0.6.12"
 garde = { version = "0.20", features = ["derive", "pattern", "serde"] }
 serde = { version = "1.0.203", features = ["derive"] }
@@ -18,7 +19,6 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 
 [dev-dependencies]
-claim = "0.5.0"
 rstest = "0.23.0"
 googletest = "0.12.0"
 
