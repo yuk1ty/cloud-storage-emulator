@@ -260,7 +260,7 @@ mod tests {
         let res = storage.list().await;
 
         // Assert
-        assert_that!(res, eq(vec![attr1, attr2]));
+        assert_that!(res, eq(&vec![attr1, attr2]));
     }
 
     #[googletest::test]
@@ -305,7 +305,7 @@ mod tests {
         let res = storage.get("test_bucket_2").await;
 
         // Assert
-        assert_that!(res, some(eq(attr2)));
+        assert_that!(res, some(eq(&attr2)));
     }
 
     #[googletest::test]
