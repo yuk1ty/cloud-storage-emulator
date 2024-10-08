@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Local};
 use dashmap::DashMap;
@@ -47,7 +47,7 @@ pub struct OnMemoryStorageObject {
 }
 
 #[derive(Clone)]
-pub struct Storage(Arc<DashMap<String, OnMemoryStorageBucket>>);
+pub struct Storage(Arc<DashMap<String, Arc<Mutex<OnMemoryStorageBucket>>>>);
 impl Default for Storage {
     fn default() -> Self {
         Self::new()
@@ -87,13 +87,19 @@ impl BucketStorageExt for Storage {
         let buckets = self
             .0
             .iter()
-            .map(|b| b.value().clone())
+            .map(|b| {
+                let bucket = b.value();
+                bucket.lock().unwrap().clone()
+            })
             .collect::<Vec<OnMemoryStorageBucket>>();
         buckets.iter().map(|b| b.attr.clone()).collect()
     }
 
     async fn get(&self, name: &str) -> Option<StorageBucketAttr> {
-        self.0.get(name).map(|b| b.value().attr.clone())
+        self.0.get(name).map(|b| {
+            let bucket = b.value();
+            bucket.lock().unwrap().clone().attr
+        })
     }
 
     async fn create(
@@ -109,7 +115,7 @@ impl BucketStorageExt for Storage {
 
         self.0.insert(
             name.to_string(),
-            OnMemoryStorageBucket {
+            Arc::new(Mutex::new(OnMemoryStorageBucket {
                 attr: StorageBucketAttr {
                     name: name.to_string(),
                     versioning: attr.versioning,
@@ -119,12 +125,15 @@ impl BucketStorageExt for Storage {
                     updated: Local::now(),
                 },
                 objects: DashMap::new(),
-            },
+            })),
         );
 
         self.0
             .get(name)
-            .map(|b| b.value().attr.clone())
+            .map(|b| {
+                let bucket = b.value();
+                bucket.lock().unwrap().clone().attr
+            })
             .ok_or(Errors::FailedToWriteStorage {
                 id: name.to_string(),
                 message: "Failed to create a new bucket".into(),
@@ -136,9 +145,11 @@ impl BucketStorageExt for Storage {
         name: &str,
         attr: UpdateBucketAttr,
     ) -> AppResult<StorageBucketAttr, Errors> {
-        let mut existence_bucket = self.0.get_mut(name).ok_or(Errors::BucketNotFound {
+        let existence_bucket = self.0.get_mut(name).ok_or(Errors::BucketNotFound {
             message: "Bucket not found".into(),
         })?;
+
+        let mut existence_bucket = existence_bucket.lock().unwrap();
 
         let new_attr = StorageBucketAttr {
             name: existence_bucket.attr.name.clone(),
@@ -158,7 +169,10 @@ impl BucketStorageExt for Storage {
             .ok_or(Errors::BucketNotFound {
                 message: "Bucket not found".into(),
             })
-            .map(|b| b.1.attr.clone())
+            .map(|b| {
+                let bucket = b.1.lock().unwrap();
+                bucket.attr.clone()
+            })
     }
 }
 
@@ -170,7 +184,7 @@ impl Storage {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
 
     use dashmap::DashMap;
     use googletest::{assert_pred, prelude::*};
@@ -204,10 +218,10 @@ mod tests {
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
-        let bucket1 = OnMemoryStorageBucket {
+        let bucket1 = Arc::new(Mutex::new(OnMemoryStorageBucket {
             attr: attr1.clone(),
             objects: DashMap::new(),
-        };
+        }));
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
             versioning: false,
@@ -216,10 +230,10 @@ mod tests {
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
-        let bucket2 = OnMemoryStorageBucket {
+        let bucket2 = Arc::new(Mutex::new(OnMemoryStorageBucket {
             attr: attr2.clone(),
             objects: DashMap::new(),
-        };
+        }));
 
         let map = DashMap::new();
         map.insert("test_bucket_1".to_string(), bucket1);
@@ -248,10 +262,10 @@ mod tests {
             location: "US-EAST1".into(),
             updated: chrono::Local::now(),
         };
-        let bucket1 = OnMemoryStorageBucket {
+        let bucket1 = Arc::new(Mutex::new(OnMemoryStorageBucket {
             attr: attr1.clone(),
             objects: DashMap::new(),
-        };
+        }));
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
             versioning: false,
@@ -260,10 +274,10 @@ mod tests {
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
-        let bucket2 = OnMemoryStorageBucket {
+        let bucket2 = Arc::new(Mutex::new(OnMemoryStorageBucket {
             attr: attr2.clone(),
             objects: DashMap::new(),
-        };
+        }));
 
         let map = DashMap::new();
         map.insert("test_bucket_1".to_string(), bucket1);
@@ -290,10 +304,10 @@ mod tests {
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
-        let bucket1 = OnMemoryStorageBucket {
+        let bucket1 = Arc::new(Mutex::new(OnMemoryStorageBucket {
             attr: attr1.clone(),
             objects: DashMap::new(),
-        };
+        }));
         let attr2 = StorageBucketAttr {
             name: "test_bucket_2".to_string(),
             versioning: false,
@@ -302,10 +316,10 @@ mod tests {
             time_created: chrono::Local::now(),
             updated: chrono::Local::now(),
         };
-        let bucket2 = OnMemoryStorageBucket {
+        let bucket2 = Arc::new(Mutex::new(OnMemoryStorageBucket {
             attr: attr2.clone(),
             objects: DashMap::new(),
-        };
+        }));
 
         let map = DashMap::new();
         map.insert("test_bucket_1".to_string(), bucket1);
