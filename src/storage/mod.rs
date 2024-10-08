@@ -46,8 +46,12 @@ pub struct OnMemoryStorageObject {
     pub data: Vec<u8>,
 }
 
+type StorageBucket = Arc<Mutex<OnMemoryStorageBucket>>;
+
+type StorageBuckets = Arc<DashMap<String, StorageBucket>>;
+
 #[derive(Clone)]
-pub struct Storage(Arc<DashMap<String, Arc<Mutex<OnMemoryStorageBucket>>>>);
+pub struct Storage(StorageBuckets);
 impl Default for Storage {
     fn default() -> Self {
         Self::new()
