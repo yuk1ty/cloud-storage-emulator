@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use chrono::{DateTime, Local};
 use dashmap::DashMap;
@@ -16,6 +19,33 @@ pub struct StorageBucketAttr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct StorageObjectAttr {
+    pub name: String,
+    pub bucket_name: String,
+    pub size: u64,
+
+    pub md5_hash: String,
+    pub crc32c: String,
+    pub etag: String,
+    // TODO: Add ACL Rules later
+    // pub acl: String,
+
+    // HTTP headers related
+    pub content_type: String,
+    pub content_encoding: String,
+    pub content_disposition: String,
+    pub content_language: String,
+    pub cache_control: String,
+
+    pub crated: DateTime<Local>,
+    pub updated: DateTime<Local>,
+    pub deleted: DateTime<Local>,
+
+    pub generation: u64,
+    pub metadata: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct CreateBucketAttr {
     pub versioning: bool,
     pub default_event_based_hold: bool,
@@ -28,10 +58,20 @@ pub struct UpdateBucketAttr {
     pub default_event_based_hold: bool,
 }
 
+pub type ObjectKey = (ObjectName, ObjectGeneration);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ObjectName(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ObjectGeneration(u64);
+
 #[derive(Clone, Debug)]
 pub struct OnMemoryStorageBucket {
     pub attr: StorageBucketAttr,
-    pub objects: DashMap<String, OnMemoryStorageObject>,
+    // FIXME: Remove the attribute later
+    #[allow(dead_code)]
+    pub objects: DashMap<ObjectKey, OnMemoryStorageObject>,
 }
 
 impl OnMemoryStorageBucket {
@@ -42,8 +82,8 @@ impl OnMemoryStorageBucket {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OnMemoryStorageObject {
-    // TODO: add attr
-    pub data: Vec<u8>,
+    pub attr: StorageObjectAttr,
+    pub content: Vec<u8>,
 }
 
 type StorageBucket = Arc<Mutex<OnMemoryStorageBucket>>;
